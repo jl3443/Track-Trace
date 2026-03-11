@@ -48,7 +48,7 @@ export function ModeBadge({ mode }: { mode: TransportMode }) {
 // ─── Exception Badge ──────────────────────────────────────────────────────────
 export function ExceptionBadge({ type }: { type: ExceptionType }) {
   const map: Record<ExceptionType, string> = {
-    Delay: "bg-red-50 text-red-700 border-red-200",
+    "Schedule Slippage": "bg-red-50 text-red-700 border-red-200",
     "Missing Signal": "bg-gray-100 text-gray-600 border-gray-300",
     "Long Dwell": "bg-purple-50 text-purple-700 border-purple-200",
     "Route Deviation": "bg-red-50 text-red-700 border-red-300",

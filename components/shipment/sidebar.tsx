@@ -1,31 +1,16 @@
 "use client"
 
-import { useState } from "react"
 import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard,
-  BarChart3,
-  Ship,
-  AlertTriangle,
-  FileText,
-  MessageSquare,
-  Clock,
-  Mail,
-  Inbox,
-  Send,
-  ChevronDown,
-  FileStack,
+  LayoutDashboard, BarChart2, AlertTriangle, Brain, Award, FileStack, User,
 } from "lucide-react"
 
 export type SidebarView =
   | "dashboard"
   | "analytics"
+  | "carrier-scorecard"
   | "exceptions"
-  | "documents"
-  | "communications"
-  | "timeline"
-  | "inbox"
-  | "sent"
+  | "agent-activity"
 
 interface SidebarProps {
   view: SidebarView
@@ -34,211 +19,98 @@ interface SidebarProps {
 }
 
 export function Sidebar({ view, onViewChange, exceptionsCount = 7 }: SidebarProps) {
-  const [shipmentOpen, setShipmentOpen] = useState(true)
-  const [emailOpen, setEmailOpen] = useState(false)
-
   return (
-    <aside className="w-[280px] bg-[#0A0A0B] text-[#A1A1AA] flex flex-col shrink-0 border-r border-gray-800">
-      {/* Logo header */}
+    <aside className="w-[260px] bg-[#0A0A0B] text-[#A1A1AA] flex flex-col shrink-0 border-r border-gray-800">
+      {/* Logo */}
       <div className="px-4 py-5 flex items-center gap-3 border-b border-gray-800">
         <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
           <FileStack className="w-5 h-5 text-white" />
         </div>
-        <div className="text-[15px] font-medium text-white leading-tight">
-          ETA Control Tower
+        <div className="text-[14px] font-semibold text-white leading-tight">
+          Operations Readiness<br />
+          <span className="text-[11px] font-normal text-gray-400">ETA Control Tower</span>
         </div>
       </div>
 
-      {/* Nav sections */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
-        {/* PORTFOLIO */}
-        <div className="mb-6">
-          <div className="text-[10px] font-semibold tracking-wider text-gray-500 px-3 mb-2">
-            PORTFOLIO
-          </div>
-          <NavItem
-            label="Dashboard"
-            icon={<LayoutDashboard size={16} />}
-            active={view === "dashboard"}
-            onClick={() => onViewChange("dashboard")}
-          />
-          <NavItem
-            label="Analytics"
-            icon={<BarChart3 size={16} />}
-            active={view === "analytics"}
-            onClick={() => onViewChange("analytics")}
-          />
-        </div>
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+        <SectionLabel>Portfolio</SectionLabel>
 
-        {/* SHIPMENT OVERVIEW */}
-        <div className="mb-6">
-          <NavParent
-            label="Shipment Overview"
-            icon={<Ship size={16} />}
-            open={shipmentOpen}
-            onToggle={() => setShipmentOpen(!shipmentOpen)}
-          />
-          {shipmentOpen && (
-            <div className="ml-3 mt-1 space-y-1">
-              <NavSubItem
-                label="Exceptions"
-                icon={<AlertTriangle size={14} />}
-                active={view === "exceptions"}
-                onClick={() => onViewChange("exceptions")}
-                badge={exceptionsCount}
-              />
-              <NavSubItem
-                label="Documents"
-                icon={<FileText size={14} />}
-                active={view === "documents"}
-                onClick={() => onViewChange("documents")}
-              />
-              <NavSubItem
-                label="Communications"
-                icon={<MessageSquare size={14} />}
-                active={view === "communications"}
-                onClick={() => onViewChange("communications")}
-              />
-              <NavSubItem
-                label="Timeline"
-                icon={<Clock size={14} />}
-                active={view === "timeline"}
-                onClick={() => onViewChange("timeline")}
-              />
-            </div>
-          )}
-        </div>
+        <NavItem
+          label="Dashboard"
+          icon={<LayoutDashboard size={15} />}
+          active={view === "dashboard"}
+          onClick={() => onViewChange("dashboard")}
+        />
+        <NavItem
+          label="Analytics"
+          icon={<BarChart2 size={15} />}
+          active={view === "analytics"}
+          onClick={() => onViewChange("analytics")}
+        />
+        <NavItem
+          label="Carrier Scorecards"
+          icon={<Award size={15} />}
+          active={view === "carrier-scorecard"}
+          onClick={() => onViewChange("carrier-scorecard")}
+        />
 
-        {/* EMAIL */}
-        <div>
-          <NavParent
-            label="Email"
-            icon={<Mail size={16} />}
-            open={emailOpen}
-            onToggle={() => setEmailOpen(!emailOpen)}
-          />
-          {emailOpen && (
-            <div className="ml-3 mt-1 space-y-1">
-              <NavSubItem
-                label="Inbox"
-                icon={<Inbox size={14} />}
-                active={view === "inbox"}
-                onClick={() => onViewChange("inbox")}
-              />
-              <NavSubItem
-                label="Sent"
-                icon={<Send size={14} />}
-                active={view === "sent"}
-                onClick={() => onViewChange("sent")}
-              />
-            </div>
-          )}
-        </div>
+        <div className="pt-3 pb-1" />
+        <SectionLabel>Operations</SectionLabel>
+
+        <NavItem
+          label="Exceptions"
+          icon={<AlertTriangle size={15} />}
+          active={view === "exceptions"}
+          onClick={() => onViewChange("exceptions")}
+          badge={exceptionsCount}
+        />
+        <NavItem
+          label="Agent Activity"
+          icon={<Brain size={15} />}
+          active={view === "agent-activity"}
+          onClick={() => onViewChange("agent-activity")}
+        />
       </nav>
 
-      {/* Footer */}
+      {/* Footer — User */}
       <div className="border-t border-gray-800 p-4">
-        <div className="text-[10px] font-semibold tracking-wider text-gray-500 mb-1.5">
-          LOGGED IN AS
-        </div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-white font-medium">Export Coordinator</div>
-          <button className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-            Switch
-          </button>
-        </div>
-        <div className="text-[11px] text-gray-600">
-          ETA Control Tower · v2.4
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-600/30 flex items-center justify-center shrink-0">
+            <User size={14} className="text-blue-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-white truncate">Export Coordinator</div>
+            <div className="text-[10px] text-gray-500 truncate">coordinator@company.com</div>
+          </div>
         </div>
       </div>
     </aside>
   )
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3 pb-1.5 pt-1 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">
+      {children}
+    </div>
+  )
+}
+
 function NavItem({
-  label,
-  icon,
-  active,
-  onClick,
+  label, icon, active, onClick, badge,
 }: {
-  label: string
-  icon: React.ReactNode
-  active: boolean
-  onClick: () => void
+  label: string; icon: React.ReactNode; active: boolean; onClick: () => void; badge?: number
 }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-        active
-          ? "bg-[#27272A] text-white"
-          : "text-[#A1A1AA] hover:bg-[#18181B] hover:text-white"
+        "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors",
+        active ? "bg-[#27272A] text-white" : "text-[#A1A1AA] hover:bg-[#18181B] hover:text-white"
       )}
     >
-      <span className={cn("shrink-0", active ? "text-blue-400" : "text-gray-500")}>
-        {icon}
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
-  )
-}
-
-function NavParent({
-  label,
-  icon,
-  open,
-  onToggle,
-}: {
-  label: string
-  icon: React.ReactNode
-  open: boolean
-  onToggle: () => void
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-[#A1A1AA] hover:bg-[#18181B] hover:text-white transition-colors"
-    >
-      <span className="shrink-0 text-gray-500">{icon}</span>
-      <span className="flex-1 text-left truncate">{label}</span>
-      <ChevronDown
-        size={14}
-        className={cn(
-          "shrink-0 transition-transform text-gray-500",
-          open && "rotate-180"
-        )}
-      />
-    </button>
-  )
-}
-
-function NavSubItem({
-  label,
-  icon,
-  active,
-  onClick,
-  badge,
-}: {
-  label: string
-  icon: React.ReactNode
-  active: boolean
-  onClick: () => void
-  badge?: number
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-        active
-          ? "bg-[#27272A] text-white"
-          : "text-[#A1A1AA] hover:bg-[#18181B] hover:text-white"
-      )}
-    >
-      <span className={cn("shrink-0", active ? "text-blue-400" : "text-gray-500")}>
-        {icon}
-      </span>
+      <span className={cn("shrink-0", active ? "text-blue-400" : "text-gray-500")}>{icon}</span>
       <span className="flex-1 text-left truncate">{label}</span>
       {badge !== undefined && (
         <span className="shrink-0 bg-red-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">

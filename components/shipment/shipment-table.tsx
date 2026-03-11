@@ -18,11 +18,23 @@ interface ShipmentTableProps {
 const MODE_OPTIONS: TransportMode[] = ["Ocean", "Road", "Air"]
 const SEVERITY_OPTIONS: Severity[] = ["Critical", "High", "Medium", "Low"]
 const EXCEPTION_OPTIONS: ExceptionType[] = [
-  "Delay", "Missing Signal", "Long Dwell", "Route Deviation",
+  "Schedule Slippage", "Missing Signal", "Long Dwell", "Route Deviation",
   "Weather Disruption", "Traffic Disruption", "Customs Hold", "Conflicting Sources",
 ]
 
 const SEVERITY_ORDER: Record<Severity, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 }
+
+// Dynamic risk score — inspired by project44 risk scoring model
+function computeRiskScore(s: Shipment): number {
+  const base: Record<Severity, number> = { Critical: 88, High: 65, Medium: 38, Low: 15 }
+  const exceptionBonus: Partial<Record<ExceptionType, number>> = {
+    "Customs Hold": 12, "Missing Signal": 10, "Long Dwell": 8,
+    "Route Deviation": 7, "Weather Disruption": 6, "Traffic Disruption": 4,
+    "Schedule Slippage": 3, "Conflicting Sources": 5,
+  }
+  const delayBonus = Math.min(Math.floor(s.delayHours / 5), 15)
+  return Math.min(base[s.severity] + delayBonus + (exceptionBonus[s.exceptionType] ?? 0), 99)
+}
 
 export function ShipmentTable({ searchQuery, activeFilter, onSelectShipment, selectedId }: ShipmentTableProps) {
   const [modeFilter, setModeFilter] = useState<TransportMode | "All">("All")
@@ -93,6 +105,7 @@ export function ShipmentTable({ searchQuery, activeFilter, onSelectShipment, sel
               <Th>Planned ETA</Th>
               <Th>Revised ETA</Th>
               <Th onClick={() => handleSort("delay")} sortIcon={<SortIcon field="delay" />}>Delay</Th>
+              <Th>Risk Score</Th>
               <Th>Exception Type</Th>
               <Th onClick={() => handleSort("severity")} sortIcon={<SortIcon field="severity" />}>Severity</Th>
               <Th>Last Signal</Th>
@@ -138,6 +151,17 @@ export function ShipmentTable({ searchQuery, activeFilter, onSelectShipment, sel
                   </span>
                 </td>
                 <td className="px-3 py-2.5"><DelayDisplay hours={s.delayHours} /></td>
+                <td className="px-3 py-2.5">
+                  {(() => {
+                    const score = computeRiskScore(s)
+                    const color = score >= 75 ? "text-red-700 bg-red-50 border-red-200" : score >= 50 ? "text-amber-700 bg-amber-50 border-amber-200" : "text-green-700 bg-green-50 border-green-200"
+                    return (
+                      <span className={cn("inline-block text-[10px] font-bold border rounded-full px-2 py-0.5 tabular-nums", color)}>
+                        {score}
+                      </span>
+                    )
+                  })()}
+                </td>
                 <td className="px-3 py-2.5"><ExceptionBadge type={s.exceptionType} /></td>
                 <td className="px-3 py-2.5"><SeverityBadge severity={s.severity} /></td>
                 <td className="px-3 py-2.5">

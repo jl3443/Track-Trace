@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { type Shipment } from "@/lib/mock-data"
 import {
   SeverityBadge, ModeBadge, ExceptionBadge, ReasonChips,
@@ -12,6 +12,7 @@ import {
   ArrowRight, ChevronRight, Check, Loader2,
 } from "lucide-react"
 import { ModeIcon } from "./shared"
+import { EmailComposer } from "./email-composer"
 
 type DrawerTab = "overview" | "signals" | "otm"
 
@@ -148,14 +149,13 @@ export function ShipmentDrawer({ shipment, onClose }: ShipmentDrawerProps) {
         </div>
       </aside>
 
-      {/* Email Modal */}
+      {/* Email Composer */}
       {showEmailModal && (
-        <EmailModal
+        <EmailComposer
           shipment={shipment}
           onClose={() => setShowEmailModal(false)}
-          onSend={() => {
+          onSent={() => {
             handleAction("emailSent")
-            setShowEmailModal(false)
           }}
         />
       )}
@@ -165,6 +165,12 @@ export function ShipmentDrawer({ shipment, onClose }: ShipmentDrawerProps) {
 
 // ─── Overview Tab ──────────────────────────────────────────────────────────────
 function OverviewTab({ shipment, actions, onAction }: { shipment: Shipment; actions: ActionState; onAction: (k: keyof ActionState) => void }) {
+  const [summaryThinking, setSummaryThinking] = useState(true)
+  useEffect(() => {
+    const t = setTimeout(() => setSummaryThinking(false), 1600)
+    return () => clearTimeout(t)
+  }, [shipment.id])
+
   return (
     <div className="p-5 space-y-4">
       {/* ETA Comparison Card */}
@@ -200,6 +206,17 @@ function OverviewTab({ shipment, actions, onAction }: { shipment: Shipment; acti
           </div>
         </div>
       </div>
+
+      {/* Disruption Context */}
+      {shipment.disruptionContext && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+          <h4 className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider mb-2">Disruption Context</h4>
+          <p className="text-xs text-gray-700 leading-relaxed">{shipment.disruptionContext}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <ReasonChips chips={shipment.reasonChips} />
+          </div>
+        </div>
+      )}
 
       {/* Timeline */}
       <div>
@@ -281,10 +298,21 @@ function OverviewTab({ shipment, actions, onAction }: { shipment: Shipment; acti
       {/* AI Agent Summary */}
       <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
         <div className="flex items-center gap-2 mb-2">
-          <Brain size={14} className="text-blue-600" />
+          <Brain size={14} className={`text-blue-600 ${summaryThinking ? "animate-pulse" : ""}`} />
           <span className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider">Agent Assessment</span>
         </div>
-        <p className="text-xs text-slate-700 leading-relaxed">{shipment.agentSummary}</p>
+        {summaryThinking ? (
+          <div className="flex items-center gap-1.5 py-0.5">
+            <span className="text-xs text-blue-500 font-medium">Assessing shipment</span>
+            <span className="inline-flex items-end gap-[3px] ml-0.5">
+              {[0, 150, 300].map((d) => (
+                <span key={d} className="w-1 h-1 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: `${d}ms`, animationDuration: "900ms" }} />
+              ))}
+            </span>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-700 leading-relaxed">{shipment.agentSummary}</p>
+        )}
       </div>
 
       {/* Action Buttons */}
@@ -332,21 +360,46 @@ function OverviewTab({ shipment, actions, onAction }: { shipment: Shipment; acti
 
 // ─── Signals Tab ───────────────────────────────────────────────────────────────
 function SignalsTab({ shipment }: { shipment: Shipment }) {
+  const totalSources = shipment.sources.length
+  const alignedCount = shipment.sources.filter(s => s.aligned === true).length
   const hasConflict = shipment.sources.some(s => s.aligned === false)
   const staleSources = shipment.sources.filter(s => !s.fresh)
+  const freshSources = shipment.sources.filter(s => s.fresh && s.timestamp)
+  const mostRecent = freshSources.length > 0 ? freshSources[0] : null
+  const stalest = staleSources.length > 0 ? staleSources[0] : null
 
   return (
     <div className="p-5 space-y-4">
-      {/* Key insight */}
-      <div className={cn(
-        "rounded-lg border p-3",
-        hasConflict ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200"
-      )}>
-        <p className="text-xs font-medium text-gray-700">
-          {hasConflict
-            ? `Sources are partially misaligned. ${staleSources.length > 0 ? `${staleSources.length} source(s) stale.` : ""} Manual review may be needed.`
-            : "All sources are aligned and fresh. High confidence in current status."}
-        </p>
+      {/* Concordance summary with visual bar */}
+      <div className={cn("rounded-lg border p-4", hasConflict ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200")}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-gray-700">Source Alignment</span>
+          <span className="text-sm font-bold text-gray-800">{alignedCount}/{totalSources} aligned</span>
+        </div>
+        {/* Progress bar */}
+        <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+          <div
+            className={cn("h-full rounded-full transition-all", hasConflict ? "bg-amber-500" : "bg-green-500")}
+            style={{ width: `${totalSources > 0 ? (alignedCount / totalSources) * 100 : 0}%` }}
+          />
+        </div>
+        {/* Most Recent / Stalest highlights */}
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          {mostRecent && (
+            <div className="text-[10px]">
+              <span className="text-gray-400">Most Recent:</span>{" "}
+              <span className="font-medium text-green-700">{mostRecent.source}</span>{" "}
+              <span className="text-gray-500">({mostRecent.freshness})</span>
+            </div>
+          )}
+          {stalest && (
+            <div className="text-[10px]">
+              <span className="text-gray-400">Stalest Source:</span>{" "}
+              <span className="font-medium text-amber-700">{stalest.source}</span>{" "}
+              <span className="text-gray-500">({stalest.freshness})</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Source matrix */}
@@ -364,8 +417,14 @@ function SignalsTab({ shipment }: { shipment: Shipment }) {
               </tr>
             </thead>
             <tbody>
-              {shipment.sources.map((src, i) => (
-                <tr key={src.source} className={cn("border-b border-gray-100", i % 2 === 0 ? "bg-white" : "bg-gray-50/40")}>
+              {shipment.sources.map((src) => (
+                <tr key={src.source} className={cn(
+                  "border-b border-gray-100",
+                  src.aligned === true ? "bg-green-50/40" :
+                  src.aligned === false ? "bg-red-50/40" :
+                  !src.fresh ? "bg-gray-50/60" :
+                  "bg-white"
+                )}>
                   <td className="px-3 py-2.5"><SourceBadge source={src.source} /></td>
                   <td className="px-3 py-2.5 text-gray-600">{src.status || <span className="text-gray-300 italic">No update</span>}</td>
                   <td className="px-3 py-2.5 font-mono text-gray-500">{src.timestamp || "—"}</td>
@@ -510,76 +569,56 @@ function OTMTab({ shipment, actions, syncing, onOTMSync, onAction, onShowEmail }
         </div>
       </div>
 
-      {/* Notification Routing Logic */}
+      {/* Notification Routing Matrix */}
       <div className="rounded-lg border border-gray-200 p-4">
-        <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Notification Routing Logic</h4>
-        <div className="space-y-1.5">
-          {[
-            { label: "Medium", desc: "Notify Router only", active: shipment.severity === "Medium" },
-            { label: "High", desc: "Notify Router + Coordinator", active: shipment.severity === "High" },
-            { label: "Critical", desc: "Notify Router + Coordinator + Plant Team + Escalation", active: shipment.severity === "Critical" },
-            { label: "Critical Material Override", desc: "Always notify Plant Team regardless of severity", active: !!shipment.criticalMaterial },
-          ].map((row) => (
-            <div key={row.label} className={cn(
-              "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs",
-              row.active ? "bg-blue-50 border border-blue-200" : "text-gray-500"
-            )}>
-              <span className={cn("font-semibold w-36 shrink-0", row.active ? "text-blue-700" : "text-gray-600")}>{row.label}</span>
-              <span className={row.active ? "text-blue-700" : "text-gray-400"}>{row.desc}</span>
-              {row.active && <span className="ml-auto text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-semibold">Active</span>}
-            </div>
-          ))}
+        <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Notification Routing Matrix</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2.5 py-2 border-b border-gray-200">Severity</th>
+                <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2.5 py-2 border-b border-gray-200">Normal Priority</th>
+                <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2.5 py-2 border-b border-gray-200">Critical Material</th>
+              </tr>
+            </thead>
+            <tbody>
+              {([
+                { severity: "Medium" as const, normal: "Router", critical: "Router + Plant Team" },
+                { severity: "High" as const, normal: "Router + Coordinator", critical: "Router + Coordinator + Plant Team" },
+                { severity: "Critical" as const, normal: "Router + Coordinator + Plant Team + Escalation", critical: "Router + Coordinator + Plant Team + Escalation" },
+              ]).map((row) => {
+                const isActiveRow = shipment.severity === row.severity
+                const isCriticalMat = !!shipment.criticalMaterial
+                return (
+                  <tr key={row.severity} className={cn(isActiveRow ? "bg-blue-50/60" : "")}>
+                    <td className={cn("px-2.5 py-2 border-b border-gray-100 font-semibold", isActiveRow ? "text-blue-700" : "text-gray-600")}>
+                      {row.severity}
+                      {isActiveRow && <span className="ml-1.5 text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-semibold align-middle">Active</span>}
+                    </td>
+                    <td className={cn(
+                      "px-2.5 py-2 border-b border-gray-100",
+                      isActiveRow && !isCriticalMat ? "text-blue-700 font-semibold bg-blue-100/50" : "text-gray-500"
+                    )}>
+                      {row.normal}
+                    </td>
+                    <td className={cn(
+                      "px-2.5 py-2 border-b border-gray-100",
+                      isActiveRow && isCriticalMat ? "text-blue-700 font-semibold bg-blue-100/50" : "text-gray-500"
+                    )}>
+                      {row.critical}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Email Modal ───────────────────────────────────────────────────────────────
-function EmailModal({ shipment, onClose, onSend }: { shipment: Shipment; onClose: () => void; onSend: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-xl mx-4">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-800">Email Preview</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100"><X size={15} /></button>
-        </div>
-        <div className="p-5 space-y-3 text-xs">
-          <EmailField label="To" value={getNotificationRecipients(shipment.severity)} />
-          <EmailField label="CC" value="logistics-ops@company.com" />
-          <EmailField label="Subject" value={`Delay Alert — Shipment ${shipment.id} — Revised ETA +${shipment.delayHours}h`} />
-          <div className="rounded-md border border-gray-200 p-3 bg-gray-50 space-y-2 text-gray-700 leading-relaxed">
-            <p className="font-semibold text-gray-800">Automated Shipment Delay Notification</p>
-            <p>Dear Team,</p>
-            <p>
-              This is an automated alert from the Shipment Tracking Agent. Shipment <strong>{shipment.id}</strong> is experiencing 
-              a delay and the ETA has been revised.
-            </p>
-            <table className="w-full text-xs border-collapse">
-              <tbody>
-                <tr className="border-b border-gray-200"><td className="py-1 text-gray-500 w-32">Shipment ID</td><td className="py-1 font-mono font-semibold">{shipment.id}</td></tr>
-                <tr className="border-b border-gray-200"><td className="py-1 text-gray-500">Carrier</td><td className="py-1">{shipment.carrier} · {shipment.trackingRef}</td></tr>
-                <tr className="border-b border-gray-200"><td className="py-1 text-gray-500">Route</td><td className="py-1">{shipment.origin} → {shipment.destination}</td></tr>
-                <tr className="border-b border-gray-200"><td className="py-1 text-gray-500">Planned ETA</td><td className="py-1 font-mono">{shipment.plannedETA}</td></tr>
-                <tr className="border-b border-gray-200"><td className="py-1 text-gray-500">Revised ETA</td><td className="py-1 font-mono text-red-600 font-semibold">{shipment.revisedETA}</td></tr>
-                <tr><td className="py-1 text-gray-500">Reason</td><td className="py-1">{shipment.reasonChips.map(c => c.label).join(", ")}</td></tr>
-              </tbody>
-            </table>
-            <p className="text-gray-600">
-              <strong>Business Impact:</strong> {shipment.businessImpact}
-            </p>
-            <p className="text-gray-400 text-[10px]">This notification was generated automatically by the Shipment Tracking Agent. Please do not reply to this email.</p>
+        {shipment.criticalMaterial && (
+          <div className="mt-2.5 flex items-center gap-1.5 text-[10px] text-red-700 font-semibold">
+            <AlertOctagon size={11} />
+            Critical Material Override: Plant Team notified regardless of severity
           </div>
-        </div>
-        <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-1.5 rounded text-xs border border-gray-300 text-gray-600 hover:bg-gray-50">Cancel</button>
-          <button
-            onClick={onSend}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <Send size={11} /> Confirm & Send
-          </button>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -591,15 +630,6 @@ function InfoRow({ label, value, highlight }: { label: string; value: string; hi
     <div className="flex gap-2">
       <span className="text-gray-400 w-24 shrink-0">{label}:</span>
       <span className={cn("text-gray-700", highlight ? "font-medium text-amber-800" : "")}>{value}</span>
-    </div>
-  )
-}
-
-function EmailField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex gap-2 items-center">
-      <span className="text-gray-400 w-12 shrink-0 font-medium">{label}:</span>
-      <span className="text-gray-700">{value}</span>
     </div>
   )
 }

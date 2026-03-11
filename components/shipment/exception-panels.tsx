@@ -1,9 +1,9 @@
 "use client"
 
-import { EXCEPTION_DISTRIBUTION, SHIPMENTS } from "@/lib/mock-data"
+import { EXCEPTION_DISTRIBUTION, DD_RISKS, type DDRisk } from "@/lib/mock-data"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
-import { SeverityBadge, ModeBadge } from "./shared"
-import { Clock } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { DollarSign, AlertTriangle } from "lucide-react"
 
 // ─── Exception Distribution Chart ────────────────────────────────────────────
 export function ExceptionDistributionPanel({ onExceptionClick }: { onExceptionClick?: () => void }) {
@@ -53,43 +53,68 @@ export function ExceptionDistributionPanel({ onExceptionClick }: { onExceptionCl
   )
 }
 
-// ─── Critical Cutoff Risk List ────────────────────────────────────────────────
-export function CriticalCutoffPanel({ onShipmentClick }: { onShipmentClick?: (s: import("@/lib/mock-data").Shipment) => void }) {
-  const atRisk = SHIPMENTS
-    .filter((s) => s.cutoffTime && (s.severity === "Critical" || s.severity === "High"))
-    .slice(0, 5)
+// ─── Detention & Demurrage Risk Panel ─────────────────────────────────────────
+// Inspired by FourKites Dynamic Ocean D&D dashboard
+
+const STATUS_CONFIG: Record<DDRisk["status"], { label: string; color: string; dot: string }> = {
+  accumulating: { label: "Accumulating", color: "text-red-700 bg-red-50 border-red-200",   dot: "bg-red-500 animate-pulse" },
+  "at-risk":    { label: "At Risk",      color: "text-amber-700 bg-amber-50 border-amber-200", dot: "bg-amber-500" },
+  resolved:     { label: "Resolved",     color: "text-green-700 bg-green-50 border-green-200", dot: "bg-green-500" },
+}
+
+export function DDRiskPanel({ onShipmentClick }: { onShipmentClick?: (id: string) => void }) {
+  const totalExposure = DD_RISKS.reduce((sum, r) => sum + r.totalExposureUSD, 0)
+  const active = DD_RISKS.filter((r) => r.status !== "resolved").length
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 flex flex-col h-full">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Critical Cutoff Risk</h3>
-      <div className="space-y-2">
-        {atRisk.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-4">No cutoff risks at this time.</p>
-        )}
-        {atRisk.map((s) => {
-          const gapHours = s.delayHours
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Likely Delay Order</h3>
+        <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+          <AlertTriangle size={10} className="text-amber-500" />
+          <span>{active} active</span>
+        </div>
+      </div>
+
+      {/* Total exposure */}
+      <div className="mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center justify-between">
+        <span className="text-[11px] text-red-700 font-medium">Total Exposure</span>
+        <div className="flex items-center gap-1">
+          <DollarSign size={12} className="text-red-600" />
+          <span className="text-sm font-bold text-red-700">{totalExposure.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <div className="space-y-2 flex-1">
+        {DD_RISKS.map((r) => {
+          const cfg = STATUS_CONFIG[r.status]
           return (
-            <div
-              key={s.id}
-              className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 bg-gray-50/50 cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
-              onClick={() => onShipmentClick?.(s)}
+            <button
+              key={r.shipmentId}
+              onClick={() => onShipmentClick?.(r.shipmentId)}
+              className="w-full text-left rounded-md border border-gray-100 px-3 py-2 bg-gray-50/40 hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <ModeBadge mode={s.mode} />
+              <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-xs font-mono font-semibold text-blue-700">{s.id}</div>
-                  <div className="text-[10px] text-gray-500 truncate" title={s.plant}>{s.plant}</div>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
+                    <span className="text-xs font-mono font-bold text-blue-700">{r.shipmentId}</span>
+                    <span className={cn("text-[9px] font-semibold border rounded-full px-1.5 py-0.5", cfg.color)}>{cfg.label}</span>
+                  </div>
+                  <div className="text-[10px] text-gray-500 truncate">{r.port}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  {r.totalExposureUSD > 0 ? (
+                    <>
+                      <div className="text-xs font-bold text-red-600">${r.totalExposureUSD.toLocaleString()}</div>
+                      <div className="text-[9px] text-gray-400">{r.daysExposed}d · ${r.dailyRateUSD}/day</div>
+                    </>
+                  ) : (
+                    <div className="text-[10px] text-gray-400">Risk only</div>
+                  )}
                 </div>
               </div>
-              <div className="text-right shrink-0 ml-2">
-                <div className="flex items-center gap-1 justify-end">
-                  <Clock size={10} className="text-gray-400" />
-                  <span className="text-[10px] font-mono text-gray-500">{s.cutoffTime?.replace("2025 ", "")}</span>
-                </div>
-                <div className="text-[10px] text-red-600 font-semibold mt-0.5">+{gapHours}h late</div>
-                <SeverityBadge severity={s.severity} />
-              </div>
-            </div>
+            </button>
           )
         })}
       </div>
