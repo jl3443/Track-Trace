@@ -126,10 +126,10 @@ export function EmailInboxPage({ onOpenTracking }: EmailInboxPageProps) {
                             {email.shipmentId}
                           </span>
                         )}
-                        {/* Show Brain icon if this email has unregistered SHP ref */}
+                        {/* Prominent AI Ready badge for unregistered order emails */}
                         {!email.shipmentId && extractShipmentId(email.body) && (
-                          <span className="text-[9px] text-indigo-600 flex items-center gap-0.5 font-semibold">
-                            <Brain size={9} /> AI Ready
+                          <span className="text-[9px] text-white bg-indigo-600 flex items-center gap-0.5 font-semibold rounded-full px-1.5 py-0.5">
+                            <Brain size={8} /> AI Analyze
                           </span>
                         )}
                       </div>

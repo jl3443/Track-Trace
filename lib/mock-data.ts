@@ -806,6 +806,33 @@ export interface InboxEmail {
 
 export const INBOX_EMAILS: InboxEmail[] = [
   {
+    id: "EM-007",
+    from: "procurement@globalparts.com",
+    fromName: "Global Parts Procurement",
+    subject: "New Purchase Order Confirmed — PO-88321 / MSC CHLOE V.423E",
+    preview: "Hi team, PO-88321 for 240 units Tier-1 battery modules has been confirmed. Carrier reference SHP-50219 / MSC CHLOE V.423E. Please add to ETA monitoring...",
+    body: `Hi Operations Team,
+
+PO-88321 for 240 units Tier-1 battery modules (Chennai plant, Lot C-2025-03) has been confirmed and is now in transit.
+
+Carrier Reference: SHP-50219
+Vessel: MSC CHLOE V.423E
+Booking: MSCUQ882103
+Route: Chennai (INNSA) → Houston (USTXH)
+ETD Chennai: Mar 12, 2025
+ETA Houston: Mar 18, 2025
+Port of Load: Nhava Sheva (INNSA)
+
+Please add shipment reference SHP-50219 to the ETA monitoring system and advise on current status and any exceptions. This order is tied to the Q2 battery assembly schedule.
+
+Regards,
+Sarah Chen
+Global Parts Procurement`,
+    timestamp: "Mar 12, 11:30",
+    read: false,
+    tag: "agent",
+  },
+  {
     id: "EM-001",
     from: "noreply@cosco.com",
     fromName: "COSCO Shipping",
@@ -969,33 +996,6 @@ WeatherRouting Inc. — Marine Operations`,
     read: false,
     shipmentId: "SHP-30178",
     tag: "weather",
-  },
-  {
-    id: "EM-007",
-    from: "procurement@globalparts.com",
-    fromName: "Global Parts Procurement",
-    subject: "New Purchase Order Confirmed — PO-88321 / MSC CHLOE V.423E",
-    preview: "Hi team, PO-88321 for 240 units Tier-1 battery modules has been confirmed. Carrier reference SHP-50219 / MSC CHLOE V.423E. Please add to ETA monitoring...",
-    body: `Hi Operations Team,
-
-PO-88321 for 240 units Tier-1 battery modules (Chennai plant, Lot C-2025-03) has been confirmed and is now in transit.
-
-Carrier Reference: SHP-50219
-Vessel: MSC CHLOE V.423E
-Booking: MSCUQ882103
-Route: Chennai (INNSA) → Houston (USTXH)
-ETD Chennai: Mar 12, 2025
-ETA Houston: Mar 18, 2025
-Port of Load: Nhava Sheva (INNSA)
-
-Please add shipment reference SHP-50219 to the ETA monitoring system and advise on current status and any exceptions. This order is tied to the Q2 battery assembly schedule.
-
-Regards,
-Sarah Chen
-Global Parts Procurement`,
-    timestamp: "Mar 12, 11:30",
-    read: false,
-    tag: "agent",
   },
 ]
 
