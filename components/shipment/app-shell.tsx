@@ -7,9 +7,13 @@ import { Dashboard } from "./dashboard"
 import { ExceptionWorkbench } from "./exception-workbench"
 import { AgentActivityLog } from "./agent-activity-log"
 import { AnalyticsPage } from "./analytics-page"
-import { CarrierScorecardPage } from "./carrier-scorecard-page"
+import { DocumentsPage } from "./documents-page"
+import { WeatherTrafficPage } from "./weather-traffic-page"
+import { TimelinePage } from "./timeline-page"
+import { EmailInboxPage } from "./email-inbox-page"
 import { EmailSentPage, type SentEmailItem } from "./email-sent-page"
-import { SHIPMENTS } from "@/lib/mock-data"
+import { CarrierScorecardPage } from "./carrier-scorecard-page"
+import { SHIPMENTS, INBOX_EMAILS } from "@/lib/mock-data"
 
 export function AppShell() {
   const [view, setView] = useState<SidebarView>("dashboard")
@@ -17,6 +21,7 @@ export function AppShell() {
   const [sentEmails, setSentEmails] = useState<SentEmailItem[]>([])
 
   const exceptionsCount = SHIPMENTS.length
+  const unreadInboxCount = INBOX_EMAILS.filter((e) => !e.read).length
 
   const handleViewChange = (v: SidebarView) => {
     setView(v)
@@ -34,6 +39,7 @@ export function AppShell() {
         view={view}
         onViewChange={handleViewChange}
         exceptionsCount={exceptionsCount}
+        unreadInboxCount={unreadInboxCount}
       />
 
       {/* Main area */}
@@ -51,6 +57,16 @@ export function AppShell() {
         {view === "exceptions" && (
           <ExceptionWorkbench onSendNotification={handleSendNotification} />
         )}
+
+        {view === "documents" && <DocumentsPage />}
+
+        {view === "weather-traffic" && <WeatherTrafficPage />}
+
+        {view === "timeline" && <TimelinePage />}
+
+        {view === "email-inbox" && <EmailInboxPage />}
+
+        {view === "email-sent" && <EmailSentPage dynamicEmails={sentEmails} />}
 
         {view === "agent-activity" && (
           <AgentActivityLog
