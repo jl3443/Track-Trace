@@ -66,7 +66,11 @@ export function AppShell() {
 
         {/* Search results overlay — shown when typing in search bar */}
         {searchQuery.trim() ? (
-          <SearchResultsPage query={searchQuery} onOpenWeather={handleOpenWeather} />
+          <SearchResultsPage
+            query={searchQuery}
+            onOpenWeather={handleOpenWeather}
+            onSendNotification={handleSendNotification}
+          />
         ) : (
           <>
             {view === "dashboard" && (
@@ -74,13 +78,17 @@ export function AppShell() {
                 searchQuery={searchQuery}
                 onViewChange={handleViewChange}
                 onOpenWeather={handleOpenWeather}
+                onSendNotification={handleSendNotification}
               />
             )}
 
             {view === "analytics" && <AnalyticsPage />}
 
             {view === "tracking-search" && (
-              <TrackingSearchPage preselectedId={trackingPreselect ?? undefined} />
+              <TrackingSearchPage
+                preselectedId={trackingPreselect ?? undefined}
+                onSendNotification={handleSendNotification}
+              />
             )}
 
             {view === "carrier-scorecard" && <CarrierScorecardPage />}
@@ -125,6 +133,7 @@ export function AppShell() {
         open={aiChatOpen}
         onClose={() => setAiChatOpen(false)}
         onOpenWeather={handleOpenWeather}
+        onSendNotification={handleSendNotification}
       />
     </div>
   )

@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { ModeIcon } from "./shared"
 import { EmailComposer } from "./email-composer"
+import { type SentEmailItem } from "./email-sent-page"
 
 type DrawerTab = "overview" | "signals" | "otm"
 
@@ -28,6 +29,7 @@ interface ShipmentDrawerProps {
   shipment: Shipment | null
   onClose: () => void
   onOpenWeather?: (shipmentId: string) => void
+  onSendNotification?: (email: SentEmailItem) => void
 }
 
 const DATA_SOURCES = [
@@ -38,7 +40,7 @@ const DATA_SOURCES = [
   "Customs Broker",
 ]
 
-export function ShipmentDrawer({ shipment, onClose, onOpenWeather }: ShipmentDrawerProps) {
+export function ShipmentDrawer({ shipment, onClose, onOpenWeather, onSendNotification }: ShipmentDrawerProps) {
   const [activeTab, setActiveTab] = useState<DrawerTab>("overview")
   const [actions, setActions] = useState<ActionState>({
     etaApproved: false,
@@ -202,6 +204,7 @@ export function ShipmentDrawer({ shipment, onClose, onOpenWeather }: ShipmentDra
               onOTMSync={handleOTMSync}
               onAction={handleAction}
               onShowEmail={() => setShowEmailModal(true)}
+              onSendNotification={onSendNotification}
             />
           )}
         </div>
@@ -527,15 +530,49 @@ function SignalsTab({ shipment }: { shipment: Shipment }) {
 }
 
 // ─── OTM Tab ───────────────────────────────────────────────────────────────────
-function OTMTab({ shipment, actions, syncing, onOTMSync, onAction, onShowEmail }: {
+function OTMTab({ shipment, actions, syncing, onOTMSync, onAction, onShowEmail, onSendNotification }: {
   shipment: Shipment
   actions: ActionState
   syncing: boolean
   onOTMSync: () => void
   onAction: (k: keyof ActionState) => void
   onShowEmail: () => void
+  onSendNotification?: (email: SentEmailItem) => void
 }) {
+  const [sendChannel, setSendChannel] = useState<"email" | "message" | "both">("email")
   const otmStatus = actions.otmSynced ? "Synced" : shipment.otmStatus
+
+  const handleSendNotification = () => {
+    const now = new Date()
+    const timeStr = now.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    const email: SentEmailItem = {
+      id: `SE-${Date.now()}`,
+      to: getNotificationRecipients(shipment.severity),
+      toName: `${shipment.plant} — Receiving Team`,
+      subject: `ETA Update — ${shipment.id} — Revised ETA +${shipment.delayHours}h`,
+      body: `Dear Receiving Team,
+
+This is an automated notification from the Shipment Tracking Agent.
+
+Shipment ${shipment.id} (${shipment.carrier}) en route from ${shipment.origin} to ${shipment.destination} has been updated in OTM.
+
+Revised ETA: ${shipment.revisedETA} (+${shipment.delayHours}h from planned)
+Reason: ${shipment.reasonChips.map((c) => c.label).join(", ")}
+Exception: ${shipment.exceptionType}
+
+OTM has been updated and this notification has been sent via ${sendChannel === "both" ? "email and message" : sendChannel}.
+
+Please plan accordingly and contact us if you have questions.
+
+Best regards,
+Export Coordination Team`,
+      timestamp: timeStr,
+      shipmentId: shipment.id,
+      tag: "delay",
+    }
+    onSendNotification?.(email)
+    onAction("notified")
+  }
 
   return (
     <div className="p-5 space-y-4">
@@ -583,6 +620,76 @@ function OTMTab({ shipment, actions, syncing, onOTMSync, onAction, onShowEmail }
           </button>
         </div>
       </div>
+
+      {/* Post-OTM: Notify Receiver card — appears after OTM approval */}
+      {actions.otmSynced && !actions.notified && (
+        <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+              <Send size={11} className="text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-blue-800">Notify Receiver</p>
+              <p className="text-[11px] text-blue-500">OTM updated — send delay alert to destination</p>
+            </div>
+          </div>
+
+          {/* Recipient preview */}
+          <div className="rounded-md bg-white border border-blue-200 px-3 py-2.5 space-y-1.5 text-xs">
+            <div className="flex gap-2">
+              <span className="text-gray-400 w-14 shrink-0">To:</span>
+              <span className="text-gray-700">{getNotificationRecipients(shipment.severity)}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-gray-400 w-14 shrink-0">Subject:</span>
+              <span className="text-gray-700 font-medium">ETA Update — {shipment.id} — Revised ETA +{shipment.delayHours}h</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-gray-400 w-14 shrink-0">Plant:</span>
+              <span className="text-gray-700">{shipment.plant}</span>
+            </div>
+          </div>
+
+          {/* Channel selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-blue-700 font-medium">Send via:</span>
+            {(["email", "message", "both"] as const).map((ch) => (
+              <button
+                key={ch}
+                onClick={() => setSendChannel(ch)}
+                className={cn(
+                  "text-[11px] font-semibold px-3 py-1 rounded-full border transition-colors capitalize",
+                  sendChannel === ch
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-blue-700 border-blue-300 hover:border-blue-500"
+                )}
+              >
+                {ch === "both" ? "Email + Message" : ch.charAt(0).toUpperCase() + ch.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Send button */}
+          <button
+            onClick={handleSendNotification}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
+          >
+            <Send size={12} />
+            Send {sendChannel === "both" ? "Email + Message" : sendChannel === "message" ? "Message" : "Email"} to Receiver
+          </button>
+        </div>
+      )}
+
+      {/* Notification sent confirmation */}
+      {actions.otmSynced && actions.notified && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 flex items-center gap-2">
+          <CheckCircle size={14} className="text-green-600 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-green-800">Receiver notified successfully</p>
+            <p className="text-[10px] text-green-600">Email synced to Sent folder</p>
+          </div>
+        </div>
+      )}
 
       {/* Notification Preview */}
       <div className="rounded-lg border border-gray-200 p-4">

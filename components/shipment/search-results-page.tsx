@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { SHIPMENTS, type Shipment } from "@/lib/mock-data"
 import { ShipmentDrawer } from "./shipment-drawer"
+import { type SentEmailItem } from "./email-sent-page"
 import { Package, AlertTriangle, Plane, Ship, Truck, Train } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -24,9 +25,10 @@ function ModeIcon({ mode }: { mode: string }) {
 interface SearchResultsPageProps {
   query: string
   onOpenWeather?: (shipmentId: string) => void
+  onSendNotification?: (email: SentEmailItem) => void
 }
 
-export function SearchResultsPage({ query, onOpenWeather }: SearchResultsPageProps) {
+export function SearchResultsPage({ query, onOpenWeather, onSendNotification }: SearchResultsPageProps) {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
 
   const q = query.toLowerCase()
@@ -128,6 +130,7 @@ export function SearchResultsPage({ query, onOpenWeather }: SearchResultsPagePro
           shipment={selectedShipment}
           onClose={() => setSelectedShipment(null)}
           onOpenWeather={onOpenWeather}
+          onSendNotification={onSendNotification}
         />
       )}
     </div>

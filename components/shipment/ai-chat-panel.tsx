@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Brain, X, Send, ChevronRight, AlertTriangle, Clock } from "lucide-react"
 import { SHIPMENTS, type Shipment } from "@/lib/mock-data"
 import { ShipmentDrawer } from "./shipment-drawer"
+import { type SentEmailItem } from "./email-sent-page"
 import { cn } from "@/lib/utils"
 
 // ── AI Response types + generator ─────────────────────────────────────────────
@@ -144,9 +145,10 @@ interface AIChatPanelProps {
   open: boolean
   onClose: () => void
   onOpenWeather?: (shipmentId: string) => void
+  onSendNotification?: (email: SentEmailItem) => void
 }
 
-export function AIChatPanel({ open, onClose, onOpenWeather }: AIChatPanelProps) {
+export function AIChatPanel({ open, onClose, onOpenWeather, onSendNotification }: AIChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isThinking, setIsThinking] = useState(false)
@@ -340,6 +342,7 @@ export function AIChatPanel({ open, onClose, onOpenWeather }: AIChatPanelProps) 
           shipment={selectedShipment}
           onClose={() => setSelectedShipment(null)}
           onOpenWeather={onOpenWeather}
+          onSendNotification={onSendNotification}
         />
       )}
     </>

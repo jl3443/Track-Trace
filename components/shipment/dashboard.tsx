@@ -10,11 +10,13 @@ import { MiniMap } from "./mini-map"
 import { ShipmentDrawer } from "./shipment-drawer"
 import { type SidebarView } from "./sidebar"
 import { Brain } from "lucide-react"
+import { type SentEmailItem } from "./email-sent-page"
 
 interface DashboardProps {
   searchQuery: string
   onViewChange?: (view: SidebarView) => void
   onOpenWeather?: (shipmentId: string) => void
+  onSendNotification?: (email: SentEmailItem) => void
 }
 
 function ThinkingDots() {
@@ -33,7 +35,7 @@ function ThinkingDots() {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
-export function Dashboard({ searchQuery, onViewChange, onOpenWeather }: DashboardProps) {
+export function Dashboard({ searchQuery, onViewChange, onOpenWeather, onSendNotification }: DashboardProps) {
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
   const [analysisThinking, setAnalysisThinking] = useState(true)
@@ -111,6 +113,7 @@ export function Dashboard({ searchQuery, onViewChange, onOpenWeather }: Dashboar
           shipment={selectedShipment}
           onClose={() => setSelectedShipment(null)}
           onOpenWeather={onOpenWeather}
+          onSendNotification={onSendNotification}
         />
       )}
     </div>

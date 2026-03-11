@@ -4,14 +4,16 @@ import { useState, useEffect } from "react"
 import { SHIPMENTS, type Shipment } from "@/lib/mock-data"
 import { SeverityBadge, ModeBadge, ExceptionBadge } from "./shared"
 import { ShipmentDrawer } from "./shipment-drawer"
+import { type SentEmailItem } from "./email-sent-page"
 import { cn } from "@/lib/utils"
 import { ScanSearch, ArrowRight, Clock, AlertTriangle, CheckCircle2 } from "lucide-react"
 
 interface TrackingSearchPageProps {
   preselectedId?: string
+  onSendNotification?: (email: SentEmailItem) => void
 }
 
-export function TrackingSearchPage({ preselectedId }: TrackingSearchPageProps) {
+export function TrackingSearchPage({ preselectedId, onSendNotification }: TrackingSearchPageProps) {
   const [query, setQuery] = useState("")
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
 
@@ -117,6 +119,7 @@ export function TrackingSearchPage({ preselectedId }: TrackingSearchPageProps) {
         <ShipmentDrawer
           shipment={selectedShipment}
           onClose={() => setSelectedShipment(null)}
+          onSendNotification={onSendNotification}
         />
       )}
     </div>
