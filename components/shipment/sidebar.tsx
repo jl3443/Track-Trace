@@ -19,6 +19,7 @@ export type SidebarView =
   | "email-inbox"
   | "email-sent"
   | "agent-activity"
+  | "tracking-search"
 
 interface SidebarProps {
   view: SidebarView

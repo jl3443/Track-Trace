@@ -14,6 +14,8 @@ import { EmailInboxPage } from "./email-inbox-page"
 import { EmailSentPage, type SentEmailItem } from "./email-sent-page"
 import { CarrierScorecardPage } from "./carrier-scorecard-page"
 import { TrackingSearchPage } from "./tracking-search-page"
+import { SearchResultsPage } from "./search-results-page"
+import { AIChatPanel } from "./ai-chat-panel"
 import { SHIPMENTS, INBOX_EMAILS } from "@/lib/mock-data"
 
 export function AppShell() {
@@ -22,7 +24,7 @@ export function AppShell() {
   const [sentEmails, setSentEmails] = useState<SentEmailItem[]>([])
   const [trackingPreselect, setTrackingPreselect] = useState<string | null>(null)
   const [weatherHighlightId, setWeatherHighlightId] = useState<string | null>(null)
-  const [pendingAIQuery, setPendingAIQuery] = useState<string | null>(null)
+  const [aiChatOpen, setAiChatOpen] = useState(false)
 
   const exceptionsCount = SHIPMENTS.length
   const unreadInboxCount = INBOX_EMAILS.filter((e) => !e.read).length
@@ -58,62 +60,72 @@ export function AppShell() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
           onSearch={setSearchQuery}
-          onAIQuery={(q) => {
-            if (view !== "dashboard") setView("dashboard")
-            setPendingAIQuery(q)
-          }}
+          onToggleAIChat={() => setAiChatOpen((prev) => !prev)}
+          aiChatOpen={aiChatOpen}
         />
 
-        {view === "dashboard" && (
-          <Dashboard
-            searchQuery={searchQuery}
-            onViewChange={handleViewChange}
-            onOpenWeather={handleOpenWeather}
-            aiQuery={pendingAIQuery}
-            onClearAIQuery={() => setPendingAIQuery(null)}
-          />
-        )}
+        {/* Search results overlay — shown when typing in search bar */}
+        {searchQuery.trim() ? (
+          <SearchResultsPage query={searchQuery} onOpenWeather={handleOpenWeather} />
+        ) : (
+          <>
+            {view === "dashboard" && (
+              <Dashboard
+                searchQuery={searchQuery}
+                onViewChange={handleViewChange}
+                onOpenWeather={handleOpenWeather}
+              />
+            )}
 
-        {view === "analytics" && <AnalyticsPage />}
+            {view === "analytics" && <AnalyticsPage />}
 
-        {view === "tracking-search" && (
-          <TrackingSearchPage preselectedId={trackingPreselect ?? undefined} />
-        )}
+            {view === "tracking-search" && (
+              <TrackingSearchPage preselectedId={trackingPreselect ?? undefined} />
+            )}
 
-        {view === "carrier-scorecard" && <CarrierScorecardPage />}
+            {view === "carrier-scorecard" && <CarrierScorecardPage />}
 
-        {view === "exceptions" && (
-          <ExceptionWorkbench
-            onSendNotification={handleSendNotification}
-            onOpenWeather={handleOpenWeather}
-          />
-        )}
+            {view === "exceptions" && (
+              <ExceptionWorkbench
+                onSendNotification={handleSendNotification}
+                onOpenWeather={handleOpenWeather}
+              />
+            )}
 
-        {view === "documents" && <DocumentsPage />}
+            {view === "documents" && <DocumentsPage />}
 
-        {view === "weather-traffic" && (
-          <WeatherTrafficPage highlightShipmentId={weatherHighlightId ?? undefined} />
-        )}
+            {view === "weather-traffic" && (
+              <WeatherTrafficPage highlightShipmentId={weatherHighlightId ?? undefined} />
+            )}
 
-        {view === "timeline" && <TimelinePage />}
+            {view === "timeline" && <TimelinePage />}
 
-        {view === "email-inbox" && (
-          <EmailInboxPage
-            onOpenTracking={(id) => {
-              setTrackingPreselect(id)
-              handleViewChange("tracking-search")
-            }}
-          />
-        )}
+            {view === "email-inbox" && (
+              <EmailInboxPage
+                onOpenTracking={(id) => {
+                  setTrackingPreselect(id)
+                  handleViewChange("tracking-search")
+                }}
+              />
+            )}
 
-        {view === "email-sent" && <EmailSentPage dynamicEmails={sentEmails} />}
+            {view === "email-sent" && <EmailSentPage dynamicEmails={sentEmails} />}
 
-        {view === "agent-activity" && (
-          <AgentActivityLog
-            onShipmentClick={() => handleViewChange("dashboard")}
-          />
+            {view === "agent-activity" && (
+              <AgentActivityLog
+                onShipmentClick={() => handleViewChange("dashboard")}
+              />
+            )}
+          </>
         )}
       </div>
+
+      {/* AI Chat Panel — fixed right-side overlay */}
+      <AIChatPanel
+        open={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+        onOpenWeather={handleOpenWeather}
+      />
     </div>
   )
 }
