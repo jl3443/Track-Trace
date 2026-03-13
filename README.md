@@ -173,8 +173,3 @@ The app runs entirely on client-side mock data — no external APIs required. Th
 | SHP-60441 | Road | Los Angeles → Chicago | Traffic disruption on I-40 |
 | SHP-88442 | Air | Pre-shipment | Awaiting departure |
 
----
-
-## Built By
-
-**[JL Group](https://www.jianlianggroup.com)**
